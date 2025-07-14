@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react"; // for constantly rendering values
+import { useEffect } from "react"; // for automatically signing in with saved api-key through localStorage
+
 import { v4 as uuidv4 } from "uuid"; // for generating unique thread id
 import "./Components/Spinner/Spinner.css"; // ./ means whatever folder page.tsx in : Means app folder app/Components/Spinner/Spinner.css gives spinner class and we can use it...
 
@@ -65,6 +67,7 @@ export default function Home() {
       return isValid;
     } else {
       isValid = true;
+      localStorage.setItem("peaka_api_key", key); // we set our apikey in localstorage so next time we reload the page it will automatically enter the apikey in useEffect (one time function).
     }
 
     const data = await response.json();
@@ -155,7 +158,8 @@ export default function Home() {
         ) {
           try {
             const parsed = JSON.parse(content);
-            if (typeof parsed === "object") { // check whether given Json is object
+            if (typeof parsed === "object") {
+              // check whether given Json is object
               content =
                 parsed.summary ??
                 JSON.stringify(parsed.data ?? parsed, null, 2);
@@ -178,6 +182,17 @@ export default function Home() {
       console.error("Fetch error:", error);
     }
   }
+  useEffect(() => {
+    // when the page opens it will check whether there is an apikey in localstorage if so it will handle api key.
+    const storedKey = localStorage.getItem("peaka_api_key");
+    if (storedKey) {
+      setApiKey((prev) => ({
+        ...prev,
+        key: storedKey,
+      }));
+      handleApiKey(storedKey);
+    }
+  }, []);
 
   //----------Return-----------------------------------------------------------------------------------------------------------------------------
   return (
@@ -210,31 +225,69 @@ export default function Home() {
             gap: "10px",
           }}
         >
-          <input
-            placeholder="API Key"
-            onChange={(e) => {
-              const key = e.target.value;
-              // Önce apiKey state'ini güncelle
-              setApiKey((prev) => ({
-                // bu zorunlu
-                ...prev,
-                key: key,
-                valid: false,
-              }));
-              if (key.length >= 39) {
-                // Sonra yeni key ile doğrulamaya çağır
-                handleApiKey(key);
-              }
-            }}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              outline: "none",
-            }}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              placeholder="API Key"
+              value={apiKey.key}
+              onChange={(e) => {
+                const key = e.target.value;
+                setApiKey((prev) => ({
+                  ...prev,
+                  key: key,
+                  valid: false,
+                }));
+                if (key.length >= 39) {
+                  handleApiKey(key);
+                }
+              }}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                outline: "none",
+              }}
+            />
 
-          {apiKey.valid === true && <div>✅</div>}
+            {apiKey.valid === true && <div>✅</div>}
+
+            {apiKey.valid && (
+              <>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("peaka_api_key");
+                    setApiKey({
+                      key: "",
+                      valid: false,
+                      projectsInfo: {
+                        projectId: "",
+                        projectName: "",
+                        userId: "",
+                        email: "",
+                      },
+                    });
+                    setMessages([]);
+                    setTH([]);
+                    setActiveThreadId(null);
+                    setmessagesLoaded(false);
+                    setInputMessage("");
+                    setInputLoaded(false);
+                    setHasLoaded(false);
+                  }}
+                  style={{
+                    marginLeft: "5px",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
       {/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */}
@@ -253,7 +306,7 @@ export default function Home() {
         <textarea
           placeholder="Ask me Anything..."
           value={inputMessage}
-          disabled= { IsInputLoaded}
+          disabled={IsInputLoaded}
           onChange={(e) => setInputMessage(e.target.value)}
           style={{
             padding: "8px",
@@ -277,7 +330,7 @@ export default function Home() {
 
             cursor: "pointer",
           }}
-          disabled= {IsInputLoaded}
+          disabled={IsInputLoaded}
           onClick={async () => {
             if (!apiKey.valid || inputMessage.trim() === "") return;
 
@@ -330,7 +383,7 @@ export default function Home() {
               };
               setActiveThreadId(newThreadId);
               setTH((prev) => [...prev, newThread]);
-               setmessagesLoaded(true);
+              setmessagesLoaded(true);
 
               const userMessage: ChatMessage = {
                 role: "user",
@@ -456,13 +509,11 @@ export default function Home() {
             if (apiKey.valid && !hasLoaded) {
               setHasLoaded(true);
               handleTH();
-
             } else if (apiKey.valid) {
-
               setActiveThreadId(null);
               setmessagesLoaded(false);
               setInputMessage("");
-               setMessages([]); 
+              setMessages([]);
             } else alert("Please enter Peaka Api Key!!!!");
           }}
         >
