@@ -5,6 +5,7 @@ import { useEffect } from "react"; // for automatically signing in with saved ap
 
 import { v4 as uuidv4 } from "uuid"; // for generating unique thread id
 import "./Components/Spinner/Spinner.css"; // ./ means whatever folder page.tsx in : Means app folder app/Components/Spinner/Spinner.css gives spinner class and we can use it...
+import ReactMarkdown from "react-markdown";
 
 type apiKeyProporties = {
   key: string;
@@ -32,9 +33,9 @@ type ChatMessage = {
 };
 
 type RawMessage = {
-  id: string[]; 
+  id: string[];
   kwargs: {
-    content: string; 
+    content: string;
   };
 };
 type ApiResponse = {
@@ -42,7 +43,6 @@ type ApiResponse = {
     messages?: RawMessage[];
   };
 };
-
 
 export default function Home() {
   const [apiKey, setApiKey] = useState<apiKeyProporties>({
@@ -157,37 +157,39 @@ export default function Home() {
       const data = await response.json();
       const rawMessages = data.result.values.messages;
 
-      const newChatMessages: ChatMessage[] = rawMessages.map((msg: RawMessage) => {
-        const lastElementOfIdArray = msg.id[msg.id.length - 1];
-        const role: "user" | "assistant" =
-          lastElementOfIdArray === "HumanMessage" ? "user" : "assistant";
+      const newChatMessages: ChatMessage[] = rawMessages.map(
+        (msg: RawMessage) => {
+          const lastElementOfIdArray = msg.id[msg.id.length - 1];
+          const role: "user" | "assistant" =
+            lastElementOfIdArray === "HumanMessage" ? "user" : "assistant";
 
-        let content = msg.kwargs.content;
+          let content = msg.kwargs.content;
 
-        if (
-          typeof content === "string" &&
-          content.trim().startsWith("{") &&
-          content.trim().endsWith("}")
-        ) {
-          try {
-            const parsed = JSON.parse(content);
-            if (typeof parsed === "object") {
-              // check whether given Json is object
-              content =
-                parsed.summary ??
-                JSON.stringify(parsed.data ?? parsed, null, 2);
+          if (
+            typeof content === "string" &&
+            content.trim().startsWith("{") &&
+            content.trim().endsWith("}")
+          ) {
+            try {
+              const parsed = JSON.parse(content);
+              if (typeof parsed === "object") {
+                // check whether given Json is object
+                content =
+                  parsed.summary ??
+                  JSON.stringify(parsed.data ?? parsed, null, 2);
+              }
+            } catch (error) {
+              console.error("Content parsing error:", error);
             }
-          } catch (error) {
-            console.error("Content parsing error:", error);
           }
-        }
 
-        return {
-          role,
-          content,
-          threadId: threadId,
-        };
-      });
+          return {
+            role,
+            content,
+            threadId: threadId,
+          };
+        }
+      );
 
       setMessages(newChatMessages);
       setmessagesLoaded(true);
@@ -599,12 +601,8 @@ export default function Home() {
               <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
                 {msg.role === "user" ? "You:" : "Peaka AI Assistant:"}
               </div>
-
-              <div>
-                {" "}
-                {typeof msg.content === "string"
-                  ? msg.content
-                  : JSON.stringify(msg.content, null, 2)}{" "}
+              <div className="text-lg prose">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
             </div>
           ))}
