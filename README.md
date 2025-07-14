@@ -1,11 +1,8 @@
 
-Copy the environment file example file:
-
+ Go to your project folder:
 ```
-cp .env.example .env
+cd your-project-folder
 ```
-
-Fill the required API keys in .env file
 
 Install dependencies using npm then start project with commands below.
 
