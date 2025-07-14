@@ -31,6 +31,19 @@ type ChatMessage = {
   threadId: string;
 };
 
+type RawMessage = {
+  id: string[]; 
+  kwargs: {
+    content: string; 
+  };
+};
+type ApiResponse = {
+  result?: {
+    messages?: RawMessage[];
+  };
+};
+
+
 export default function Home() {
   const [apiKey, setApiKey] = useState<apiKeyProporties>({
     key: "",
@@ -144,7 +157,7 @@ export default function Home() {
       const data = await response.json();
       const rawMessages = data.result.values.messages;
 
-      const newChatMessages: ChatMessage[] = rawMessages.map((msg: any) => {
+      const newChatMessages: ChatMessage[] = rawMessages.map((msg: RawMessage) => {
         const lastElementOfIdArray = msg.id[msg.id.length - 1];
         const role: "user" | "assistant" =
           lastElementOfIdArray === "HumanMessage" ? "user" : "assistant";
@@ -337,7 +350,7 @@ export default function Home() {
             const URL = `https://partner.peaka.studio/api/v1/ai-agent/${apiKey.projectsInfo.projectId}/chat`;
 
             const prepareAssistantMessage = (
-              data: any,
+              data: ApiResponse,
               threadId: string
             ): ChatMessage => {
               const allMessages = data.result?.messages || [];
@@ -345,7 +358,7 @@ export default function Home() {
               const assistantRaw = [...allMessages]
                 .reverse()
                 .find(
-                  (msg: any) =>
+                  (msg) =>
                     msg.id.includes("FunctionMessage") ||
                     msg.id.includes("AIMessage")
                 );
